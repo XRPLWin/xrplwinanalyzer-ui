@@ -12,7 +12,9 @@ use App\Models\TransactionPayment;
 use App\Models\TransactionTrustset;
 use App\Models\TransactionAccountset;
 
-
+/**
+* TODO: check for XLS15d if (hex.startsWith('02')) {
+*/
 class XrplAccountSync extends Command
 {
     /**
