@@ -63,6 +63,8 @@
 @push('javascript')
 <script>
 
+var total_xrp = 0;
+
 async function xw_xrpl_account_info() {
   await xw_get_xrpl_client().connect()
   const response = await xw_get_xrpl_client().request({
@@ -77,6 +79,7 @@ async function xw_xrpl_account_info() {
   if(response.type == "response")
   {
     $("#price_xrp").text((response.result.account_data.Balance / 1000000));
+    total_xrp += (response.result.account_data.Balance / 1000000);
     af = xrpl.parseAccountRootFlags(response.result.account_data.Flags);
     if(response.result.account_data.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
       //Account is blackholed
@@ -84,9 +87,34 @@ async function xw_xrpl_account_info() {
     } else $("#li_noblackholed").removeClass('d-none');
   }
 }
-  $(function(){
-    xw_xrpl_account_info();
+
+function XWAPI_account_lines_cb(d,el,loader){
+  $.each(d.result.lines,function(k,v){
+  //  console.log(v);
+    XWAPIRawRequest({
+      sysroute: xw_analyzer_url+'/currency_rates/XRP/'+v.currency+'+'+v.account+'/'+v.balance,
+      sysmethod:'GET',
+      sysc:'currency_rate_cb'
+    },'currency_rate_'+k)
   });
+}
+
+function XWAPI_currency_rate_cb(d,el,loader,data){
+//  console.log(d.price + '');
+//  console.log(el);
+  total_xrp += (d.price * d.amount);
+  $("#price_total_xrp").text(total_xrp);
+}
+
+$(function(){
+  xw_xrpl_account_info();
+  //account lines
+  XWAPIRawRequest({
+    sysroute: xw_analyzer_url+'/account_lines/{{$account}}',
+    sysmethod:'GET',
+    sysc:'account_lines_cb'
+  },'account_lines')
+});
 
 
 </script>
