@@ -62,8 +62,15 @@
 
 @push('javascript')
 <script>
+/*
+let a = new BigNumber('6001199760047990e-3');
+let b = new BigNumber(12);
+aa = a.plus(b);
+alert(aa);
+*/
 
-var total_xrp = 0;
+var total_xrp = new BigNumber(0);
+var account_lines = [];
 
 async function xw_xrpl_account_info() {
   await xw_get_xrpl_client().connect()
@@ -79,7 +86,8 @@ async function xw_xrpl_account_info() {
   if(response.type == "response")
   {
     $("#price_xrp").text((response.result.account_data.Balance / 1000000));
-    total_xrp += (response.result.account_data.Balance / 1000000);
+    //total_xrp += (response.result.account_data.Balance / 1000000);
+    //total_xrp = total_xrp.plus(new BigNumber((response.result.account_data.Balance / 1000000)));
     af = xrpl.parseAccountRootFlags(response.result.account_data.Flags);
     if(response.result.account_data.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
       //Account is blackholed
@@ -88,22 +96,33 @@ async function xw_xrpl_account_info() {
   }
 }
 
-function XWAPI_account_lines_cb(d,el,loader){
+
+function XWAPI_account_lines_cb(d,el,sys,loader){
+
   $.each(d.result.lines,function(k,v){
-  //  console.log(v);
+    account_lines[v.account+'_'+v.currency] = v;
     XWAPIRawRequest({
-      sysroute: xw_analyzer_url+'/currency_rates/XRP/'+v.currency+'+'+v.account+'/'+v.balance,
+      sysroute: xw_analyzer_url+'/currency_rates/XRP/'+v.currency+'+'+v.account,
       sysmethod:'GET',
+      syscurrency:v.currency,
+      sysaccount:v.account,
       sysc:'currency_rate_cb'
     },'currency_rate_'+k)
   });
 }
 
-function XWAPI_currency_rate_cb(d,el,loader,data){
+function XWAPI_currency_rate_cb(d,el,sys,loader){
 //  console.log(d.price + '');
 //  console.log(el);
-  total_xrp += (d.price * d.amount);
-  $("#price_total_xrp").text(total_xrp);
+//console.log(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance);
+  //total_xrp += (d.price * account_lines[sys.sysaccount+'_'+sys.syscurrency].balance);
+  if(sys.sysaccount == 'r9GADvxRfaaxYQepHLqRPCH4xfAwMCwyWa')
+  {
+    console.log(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance), BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).toFixed(), account_lines[sys.sysaccount+'_'+sys.syscurrency]);
+  }
+
+  total_xrp = total_xrp.plus(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).times(BigNumber(d.price)));
+  $("#price_total_xrp").text(total_xrp.toFixed(2));
 }
 
 $(function(){

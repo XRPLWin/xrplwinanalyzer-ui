@@ -124,18 +124,18 @@ function XWAPIRequest(el,appenddata) {
         if (sys.sysc) {
           if(eval("typeof XWAPI_"+sys.sysc) !== "undefined"){
             //console.log('Call(sysc): XWAPI_'+sys.sysc);
-            window["XWAPI_"+sys.sysc](d,el,loader);
+            window["XWAPI_"+sys.sysc](d,el,sys,loader);
           }
           else
-            console.warn('Warning: Global Function named "XWAPI_'+sys.sysc+'(d,el,loader)" does not exist in window scope.');
+            console.warn('Warning: Global Function named "XWAPI_'+sys.sysc+'(d,el,sys,loader)" does not exist in window scope.');
         }
         else if (sys.syscust){
           if(eval("typeof XWAPICustom"+token+"_"+sys.syscust) !== "undefined"){
             //console.log("Call(syscust): "+"XWAPICustom"+token+"_"+sys.syscust)
-            window["XWAPICustom"+token+"_"+sys.syscust](d,el,loader)
+            window["XWAPICustom"+token+"_"+sys.syscust](d,el,sys,loader)
           }
           else
-            console.warn('Warning: Custom Function named "XWAPICustom'+token+'_'+sys.syscust+'(response,el,loader)" does not exist in window scope.');
+            console.warn('Warning: Custom Function named "XWAPICustom'+token+'_'+sys.syscust+'(response,el,sys,loader)" does not exist in window scope.');
         }
       },
       error: function(a,d,c){
