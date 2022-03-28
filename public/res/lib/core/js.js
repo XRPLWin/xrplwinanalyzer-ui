@@ -239,6 +239,63 @@ function XWAPIError(response,sys,el,loader,token){
     }
 }
 
+/**
+ * Sidebar item
+ */
+var sitems_tracker = [];
+function sItem(id, sid, opts, ttl)
+{
+  if(!ttl) ttl = false;
+  var c = (typeof opts.class === 'undefined') ? '':opts.class;
+  h = '<div id="'+sid+'"><div class="sideber-queue-item border-bottom py-1 px-2 sidebar-queue-sitem '+c+'">';
+  h += '<div class="title fw-bold text-truncate">'+opts.title+'</div>';
+  if(opts.descr !== false) {
+    h += '<span class="d-block text-muted text-truncate subtitle">'+opts.descr+'</span>';
+  }
+  h += '</div></div>';
+  $("#"+id).prepend(h);
+  if(ttl) setTimeout(function(){ sItemRemove(sid) }, ttl)
+}
+function sItemRemove(sid)
+{
+  $("#"+sid).slideUp('slow',function(){$(this).remove()});
+}
+function sItemChangeTitle(sid,newtitle,ttl)
+{
+  if(!ttl) ttl = false;
+  $("#"+sid+" .title").html(newtitle);
+  if(ttl) setTimeout(function(){ sItemRemove(sid) }, ttl)
+}
+function sItemChangeSubTitle(sid,newtitle,ttl)
+{
+  if(!ttl) ttl = false;
+  $("#"+sid+" .subtitle").html(newtitle);
+  if(ttl) setTimeout(function(){ sItemRemove(sid) }, ttl)
+}
+function sItemAddClass(sid,cls,ttl)
+{
+  if(!ttl) ttl = false;
+  $("#"+sid).addClass(cls);
+  if(ttl) setTimeout(function(){ sItemRemove(sid) }, ttl)
+}
+
+
+function XWAPI_rsqueue_cb(d,el,loader){
+  var h = '';
+  $.each(d,function(k,v){
+    if(v.qtype == 'account'){
+      h += '<div><div class="sideber-queue-item border-bottom p-2 sidebar-queue-item-account">';
+      h +=  '<div class="font-monospace" title="'+v.qtype_data+'">'+v.qtype_data.substring(0,4)+'....'+v.qtype_data.slice(-4)+'</div>';
+      h += '<span class="d-block">';
+      if(v.attemts > 0)
+        h += '<i class="fas fa-sync-alt fa-spin text-muted"></i> ';
+      h += v.queue+'</span>';
+      h += '</div></div>';
+    }
+  })
+  $("#sidebar_queue_server").html(h);
+}
+
 
 
 /**
@@ -303,22 +360,6 @@ function htmlToElement(html) {
     html = html.trim(); // Never return a text node of whitespace as the result
     template.innerHTML = html;
     return template.content.firstChild;
-}
-
-function XWAPI_rsqueue_cb(d,el,loader){
-  var h = '';
-  $.each(d,function(k,v){
-    if(v.qtype == 'account'){
-      h += '<div class="sideber-queue-item border-top border-bottom p-2 sidebar-queue-item-account">';
-      h +=  '<div class="font-monospace" title="'+v.qtype_data+'">'+v.qtype_data.substring(0,4)+'....'+v.qtype_data.slice(-4)+'</div>';
-      h += '<span class="d-block">';
-      if(v.attemts > 0)
-        h += '<i class="fas fa-sync-alt fa-spin text-muted"></i> ';
-      h += v.queue+'</span>';
-      h += '</div>';
-    }
-  })
-  $("#sidebar_queue_server").html(h);
 }
 
 

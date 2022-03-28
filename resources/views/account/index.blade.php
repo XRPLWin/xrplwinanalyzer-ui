@@ -73,6 +73,10 @@ var total_xrp = new BigNumber(0);
 var account_lines = [];
 
 async function xw_xrpl_account_info() {
+  sItem('sidebar_queue_local','connecting',{
+    title: 'Connecting to XRPL...',
+    descr: false,
+  });
   await xw_get_xrpl_client().connect()
   const response = await xw_get_xrpl_client().request({
     "command": "account_info",
@@ -80,6 +84,8 @@ async function xw_xrpl_account_info() {
     "strict": true,
     "ledger_index": "validated"
   });
+  sItemRemove('connecting')
+  sItem('sidebar_queue_local','connected',{title: 'Connected',descr:false,class:'text-success'},2000);
   xw_get_xrpl_client().disconnect();
   if(response.type == "response")
   {
@@ -93,8 +99,13 @@ async function xw_xrpl_account_info() {
     } else $("#li_noblackholed").removeClass('d-none');
   }
 }
-
+var XWAPI_account_lines_cb_total = 0;
+var XWAPI_account_lines_cb_count = 0;
 function XWAPI_account_lines_cb(d,el,sys,loader){
+  XWAPI_account_lines_cb_total = d.result.lines.length;
+  sItemRemove('account_lines');
+  sItem('sidebar_queue_local','account_lines',{title: 'Fetching balances...',descr:'0/'+XWAPI_account_lines_cb_count});
+  //sItemChangeTitle('account_lines','Loaded',1000);
   $.each(d.result.lines,function(k,v){
     account_lines[v.account+'_'+v.currency] = v;
     XWAPIRawRequest({
@@ -105,15 +116,26 @@ function XWAPI_account_lines_cb(d,el,sys,loader){
       sysc:'currency_rate_cb'
     },'currency_rate_'+k)
   });
+  //sItemRemove('account_lines');
+
 }
 
 function XWAPI_currency_rate_cb(d,el,sys,loader){
+  XWAPI_account_lines_cb_count += 1;
   total_xrp = total_xrp.plus(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).times(BigNumber(d.price)));
   $("#price_total_xrp").text(total_xrp.toFixed(2));
+  sItemChangeSubTitle('account_lines',XWAPI_account_lines_cb_count+'/'+XWAPI_account_lines_cb_total+' '+sys.sysaccount);
+  if(XWAPI_account_lines_cb_count >= XWAPI_account_lines_cb_total){
+    sItemChangeTitle('account_lines','Balances fetched',4000);
+    sItemAddClass('account_lines','text-success');
+    //sItem('sidebar_queue_local','account_lines_done',{title: 'Balances fetched',descr:false,class:'text-success'});
+  }
+
 }
 
 $(function(){
   xw_xrpl_account_info();
+  sItem('sidebar_queue_local','account_lines',{title: 'Loading truslines...',descr:false,class:'text-success'});
   XWAPIRawRequest({
     sysroute: xw_analyzer_url+'/account_lines/{{$account}}',
     sysmethod:'GET',

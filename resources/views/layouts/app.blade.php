@@ -94,9 +94,9 @@
 
             </div>
             <div class="d-flex flex-column flex-shrink-0 bg-white border-start sidebar  border-bottom" style="width:280px">
-              <span class="text-muted text-uppercase m-2">Local queue</span>
+              <span class="text-muted text-uppercase p-1 bg-light border-bottom">Local queue</span>
               <div id="sidebar_queue_local"></div>
-              <span class="text-muted text-uppercase m-2">Server queue</span>
+              <span class="text-muted text-uppercase p-1 bg-light border-bottom">Server queue</span>
               <div id="sidebar_queue_server"></div>
             </div>
           </div>
