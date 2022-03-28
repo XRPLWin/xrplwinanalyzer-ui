@@ -80,9 +80,7 @@ async function xw_xrpl_account_info() {
     "strict": true,
     "ledger_index": "validated"
   });
-
   xw_get_xrpl_client().disconnect();
-  //console.log(response);
   if(response.type == "response")
   {
     $("#price_xrp").text((response.result.account_data.Balance / 1000000));
@@ -96,9 +94,7 @@ async function xw_xrpl_account_info() {
   }
 }
 
-
 function XWAPI_account_lines_cb(d,el,sys,loader){
-
   $.each(d.result.lines,function(k,v){
     account_lines[v.account+'_'+v.currency] = v;
     XWAPIRawRequest({
@@ -112,22 +108,12 @@ function XWAPI_account_lines_cb(d,el,sys,loader){
 }
 
 function XWAPI_currency_rate_cb(d,el,sys,loader){
-//  console.log(d.price + '');
-//  console.log(el);
-//console.log(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance);
-  //total_xrp += (d.price * account_lines[sys.sysaccount+'_'+sys.syscurrency].balance);
-  if(sys.sysaccount == 'r9GADvxRfaaxYQepHLqRPCH4xfAwMCwyWa')
-  {
-    console.log(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance), BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).toFixed(), account_lines[sys.sysaccount+'_'+sys.syscurrency]);
-  }
-
   total_xrp = total_xrp.plus(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).times(BigNumber(d.price)));
   $("#price_total_xrp").text(total_xrp.toFixed(2));
 }
 
 $(function(){
   xw_xrpl_account_info();
-  //account lines
   XWAPIRawRequest({
     sysroute: xw_analyzer_url+'/account_lines/{{$account}}',
     sysmethod:'GET',

@@ -94,8 +94,10 @@
 
             </div>
             <div class="d-flex flex-column flex-shrink-0 bg-white border-start sidebar  border-bottom" style="width:280px">
-              <span class="text-muted text-uppercase m-2">Queue</span>
-              <div id="sidebar_queue">...</div>
+              <span class="text-muted text-uppercase m-2">Local queue</span>
+              <div id="sidebar_queue_local"></div>
+              <span class="text-muted text-uppercase m-2">Server queue</span>
+              <div id="sidebar_queue_server"></div>
             </div>
           </div>
           {{--<div class="relative flex items-top justify-center min-h-screen bg-gray-100 dark:bg-gray-900 sm:items-center sm:pt-0">

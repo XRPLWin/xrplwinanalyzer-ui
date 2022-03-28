@@ -318,7 +318,7 @@ function XWAPI_rsqueue_cb(d,el,loader){
       h += '</div>';
     }
   })
-  $("#sidebar_queue").html(h);
+  $("#sidebar_queue_server").html(h);
 }
 
 
