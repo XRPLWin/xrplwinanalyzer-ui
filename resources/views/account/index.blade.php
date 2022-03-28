@@ -87,7 +87,7 @@ async function xw_xrpl_account_info() {
   {
     $("#price_xrp").text((response.result.account_data.Balance / 1000000));
     //total_xrp += (response.result.account_data.Balance / 1000000);
-    //total_xrp = total_xrp.plus(new BigNumber((response.result.account_data.Balance / 1000000)));
+    total_xrp = total_xrp.plus(new BigNumber((response.result.account_data.Balance / 1000000)));
     af = xrpl.parseAccountRootFlags(response.result.account_data.Flags);
     if(response.result.account_data.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
       //Account is blackholed
