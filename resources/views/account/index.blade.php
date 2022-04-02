@@ -7,7 +7,9 @@
 @endsection
 @section('topnav')
   <a class="nav-link active" aria-current="page" href="/account/{{$account}}">Overview</a>
-  <a class="nav-link" aria-current="page" href="/account/{{$account}}/assets">Tokens</a>
+  <a class="nav-link" aria-current="page" href="/account/{{$account}}/assets">Tokens
+    <span class="badge bg-light text-dark rounded-pill align-text-bottom count-tokens">0</span>
+  </a>
   <a class="nav-link" aria-current="page" href="/account/{{$account}}/nfts">NFTs</a>
   <a class="nav-link" aria-current="page" href="/account/{{$account}}/spending">Spending</a>
   <a class="nav-link" href="/account/{{$account}}/ancestry">Ancestry</a>
@@ -18,7 +20,7 @@
     <div class="row">
       <div class="col-6">
         <div class="text-muted text-uppercase fw-bold">Estimated balance</div>
-        <h3 class="fw-bold"><span id="price_total_xrp">...</span> XRP <span class="text-muted">≈ $0.00</span></h3>
+        <h3 class="fw-bold"><span id="price_total_xrp">...</span> XRP <span class="text-muted">≈ $<span id="price_total_fiat">0.00</span></span></h3>
         <h5 class="fw-bold mt-4">Assets</h5>
         <ul class="list-group assets">
           <li class="list-group-item">
@@ -26,6 +28,8 @@
           </li>
           <a href="/account/{{$account}}/assets" class="list-group-item list-group-item-action">
             Tokens <span class="float-end"><i class="fas fa-angle-right"></i></span>
+            <span class="float-end me-3 fw-bold count-tokens">0</span>
+
           </a>
           <a href="/account/{{$account}}/nfts" class="list-group-item list-group-item-action">
             NFTs <span class="float-end"><i class="fas fa-angle-right"></i></span>
@@ -74,6 +78,30 @@ alert(aa);
 
 var total_xrp = new BigNumber(0);
 var account_lines = [];
+
+
+var exchangerates = {usd:0,eur:0};
+function get_exchangerates(){
+  //usd:
+  XWAPIRawRequest({
+    sysroute: xw_analyzer_url+'/currency_rates/USD+rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq/XRP',
+    sysmethod:'GET',
+    syscurrency:'usd',
+    sysc:'set_exchangerates'
+  },'get_exchangerates_usd');
+  //usd:
+  XWAPIRawRequest({
+    sysroute: xw_analyzer_url+'/currency_rates/EUR+rhub8VRN55s94qWKDv6jmDy1pUykJzF3wq/XRP',
+    sysmethod:'GET',
+    syscurrency:'eur',
+    sysc:'set_exchangerates'
+  },'get_exchangerates_eur')
+}
+function XWAPI_set_exchangerates(d,el,sys,loader){
+  if(sys.syscurrency === 'usd') exchangerates.usd = d.price;
+  if(sys.syscurrency === 'eur') exchangerates.eur = d.price;
+  console.log('Rates:',exchangerates);
+}
 
 async function xw_xrpl_account_info() {
   sItem('sidebar_queue_local','connecting',{
@@ -125,6 +153,7 @@ var XWAPI_account_lines_cb_total = 0;
 var XWAPI_account_lines_cb_count = 0;
 function XWAPI_account_lines_cb(d,el,sys,loader){
   XWAPI_account_lines_cb_total = d.result.lines.length;
+  $(".count-tokens").text(XWAPI_account_lines_cb_total);
   sItemRemove('account_lines');
   sItem('sidebar_queue_local','account_lines',{title: 'Fetching balances...',descr:'0/'+XWAPI_account_lines_cb_count});
   //sItemChangeTitle('account_lines','Loaded',1000);
@@ -146,6 +175,7 @@ function XWAPI_currency_rate_cb(d,el,sys,loader){
   XWAPI_account_lines_cb_count += 1;
   total_xrp = total_xrp.plus(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).times(BigNumber(d.price)));
   $("#price_total_xrp").text(total_xrp.toFormat(2));
+  $("#price_total_fiat").text(total_xrp.times(exchangerates.usd).toFormat(2));
   sItemChangeSubTitle('account_lines',XWAPI_account_lines_cb_count+'/'+XWAPI_account_lines_cb_total+' '+sys.sysaccount);
   if(XWAPI_account_lines_cb_count >= XWAPI_account_lines_cb_total){
     sItemChangeTitle('account_lines','Balances fetched',4000);
@@ -158,6 +188,7 @@ function XWAPI_currency_rate_cb(d,el,sys,loader){
 $(function(){
   xw_xrpl_account_info();
   sItem('sidebar_queue_local','account_lines',{title: 'Loading truslines...',descr:false,class:'text-success'});
+  get_exchangerates();
   XWAPIRawRequest({
     sysroute: xw_analyzer_url+'/account_lines/{{$account}}',
     sysmethod:'GET',
