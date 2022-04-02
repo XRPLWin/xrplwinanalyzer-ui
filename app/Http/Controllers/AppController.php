@@ -15,4 +15,11 @@ class AppController extends Controller
     {
       return view('account.index', compact('account'));
     }
+
+    public function account_assets(string $account)
+    {
+      return view('account.assets', compact('account'));
+    }
+
+
 }
