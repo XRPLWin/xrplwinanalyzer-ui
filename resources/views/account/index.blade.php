@@ -39,14 +39,17 @@
         <dl class="row small mb-0 mt-3">
           <dt class="col-lg-3 col-sm-3">Activated:</dt>  <dd class="col-lg-9 col-sm-9">-</dd>
           <dt class="col-lg-3 col-sm-3">Activated by:</dt>  <dd class="col-lg-9 col-sm-9">-</dd>
-          <dt class="col-lg-3 col-sm-3">Can receive XRP:</dt>  <dd class="col-lg-9 col-sm-9">?</dd>
-          <dt class="col-lg-3 col-sm-3">Email hash:</dt><dd class="col-lg-9 col-sm-9 text-break">-</dd>
-          <dt class="col-lg-3 col-sm-3">Domain:</dt>  <dd class="col-lg-9 col-sm-9">-</dd>
+          <dt class="col-lg-3 col-sm-3">Can receive XRP:</dt>  <dd class="col-lg-9 col-sm-9" id="account_receivexrp">-</dd>
+          <dt class="col-lg-3 col-sm-3">Requires dest. tag:</dt>  <dd class="col-lg-9 col-sm-9" id="account_reqdesttag">-</dd>
+
+          <dt class="col-lg-3 col-sm-3">Email hash:</dt><dd class="col-lg-9 col-sm-9 text-break" id="account_emailhash">-</dd>
+          <dt class="col-lg-3 col-sm-3">Domain:</dt>  <dd class="col-lg-9 col-sm-9" id="account_domain">-</dd>
           <dt class="col-lg-3 col-sm-3">Access:</dt>
           <dd class="col-lg-9 col-sm-9">
             <div class="badge bg-success text-center d-none" style="letter-spacing:1px" id="li_yesblackholed">BLACKHOLED ACCOUNT</div>
             <div class="badge bg-info text-center d-none" style="letter-spacing:1px" id="li_noblackholed">NOT BLACKHOLED</div>
           </dd>
+          <dt class="col-lg-3 col-sm-3">Rippling:</dt>  <dd class="col-lg-9 col-sm-9" id="account_rippling">-</dd>
         </dl>
       </div>
     </div>
@@ -75,29 +78,48 @@ var account_lines = [];
 async function xw_xrpl_account_info() {
   sItem('sidebar_queue_local','connecting',{
     title: 'Connecting to XRPL...',
-    descr: false,
+    descr: xw_xrpl_wss_server,
   });
-  await xw_get_xrpl_client().connect()
-  const response = await xw_get_xrpl_client().request({
+  await xw_get_xrpl_client().connect();
+  sItemChangeTitle('connecting','Connected');
+  sItemAddClass('connecting','text-success',10000);
+
+
+  const account_info_response = await xw_get_xrpl_client().request({
     "command": "account_info",
     "account": "{{$account}}",
     "strict": true,
     "ledger_index": "validated"
   });
-  sItemRemove('connecting')
-  sItem('sidebar_queue_local','connected',{title: 'Connected',descr:false,class:'text-success'},2000);
-  xw_get_xrpl_client().disconnect();
-  if(response.type == "response")
+
+
+  if(account_info_response.type == "response")
   {
-    $("#price_xrp").text((response.result.account_data.Balance / 1000000));
-    //total_xrp += (response.result.account_data.Balance / 1000000);
-    total_xrp = total_xrp.plus(new BigNumber((response.result.account_data.Balance / 1000000)));
-    af = xrpl.parseAccountRootFlags(response.result.account_data.Flags);
-    if(response.result.account_data.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
+    $("#price_xrp").text((account_info_response.result.account_data.Balance / 1000000));
+    total_xrp = total_xrp.plus(new BigNumber((account_info_response.result.account_data.Balance / 1000000)));
+    af = xrpl.parseAccountRootFlags(account_info_response.result.account_data.Flags);
+    //console.log(af);
+    if(account_info_response.result.account_data.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
       //Account is blackholed
       $("#li_yesblackholed").removeClass('d-none');
     } else $("#li_noblackholed").removeClass('d-none');
+
+    if(account_info_response.result.account_data.Domain){
+      $("#account_domain").text(xrpl.convertHexToString(account_info_response.result.account_data.Domain))
+    }
+    if(account_info_response.result.account_data.EmailHash){
+      $("#account_emailhash").text(account_info_response.result.account_data.EmailHash)
+    }
+    //Rippling enabled:
+    $("#account_rippling").text((af.lsfDefaultRipple)?'Enabled':'Disabled');
+    //Can receive xrp
+    $("#account_receivexrp").text((af.lsfDisallowXRP)?'No':'Yes');
+
+    $("#account_reqdesttag").text((af.lsfRequireDestTag)?'Yes':'No');
   }
+
+  xw_get_xrpl_client().disconnect();
+  //sItemChangeTitle('connecting','Disconnected');
 }
 var XWAPI_account_lines_cb_total = 0;
 var XWAPI_account_lines_cb_count = 0;
@@ -123,7 +145,7 @@ function XWAPI_account_lines_cb(d,el,sys,loader){
 function XWAPI_currency_rate_cb(d,el,sys,loader){
   XWAPI_account_lines_cb_count += 1;
   total_xrp = total_xrp.plus(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).times(BigNumber(d.price)));
-  $("#price_total_xrp").text(total_xrp.toFixed(2));
+  $("#price_total_xrp").text(total_xrp.toFormat(2));
   sItemChangeSubTitle('account_lines',XWAPI_account_lines_cb_count+'/'+XWAPI_account_lines_cb_total+' '+sys.sysaccount);
   if(XWAPI_account_lines_cb_count >= XWAPI_account_lines_cb_total){
     sItemChangeTitle('account_lines','Balances fetched',4000);
