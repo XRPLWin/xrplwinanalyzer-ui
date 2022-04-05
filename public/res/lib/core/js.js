@@ -282,14 +282,18 @@ function sItemAddClass(sid,cls,ttl)
 
 function XWAPI_rsqueue_cb(d,el,loader){
   var h = '';
+  var dte = new Date();
+
   $.each(d,function(k,v){
     if(v.qtype == 'account'){
       h += '<div><div class="sideber-queue-item border-bottom p-2 sidebar-queue-item-account">';
       h +=  '<div class="font-monospace" title="'+v.qtype_data+'">'+v.qtype_data.substring(0,4)+'....'+v.qtype_data.slice(-4)+'</div>';
       h += '<span class="d-block">';
-      if(v.attemts > 0)
-        h += '<i class="fas fa-sync-alt fa-spin text-muted"></i> ';
-      h += v.queue+'</span>';
+      if(v.attempts > 0)
+        h += '<i class="fas fa-sync-alt fa-spin text-success"></i> ';
+      else
+        h += '<i class="fas fa-sync-alt text-muted"></i> ';
+      h += v.queue+' <span class="text-muted">'+( Math.round((dte.getTime()/1000) - v.available_at ))+'s</span> #'+v.id+'</span>';
       h += '</div></div>';
     }
   })

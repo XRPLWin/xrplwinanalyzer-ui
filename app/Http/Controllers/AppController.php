@@ -11,14 +11,23 @@ class AppController extends Controller
       return view('frontpage');
     }
 
+    public function search(Request $request)
+    {
+      $q = $request->input('q');
+      if(empty($q))
+        return redirect()->route('front');
+
+      return redirect()->route('account.index',['account' => $q]);
+    }
+
     public function account_index(string $account)
     {
       return view('account.index', compact('account'));
     }
 
-    public function account_assets(string $account)
+    public function account_tokens(string $account)
     {
-      return view('account.assets', compact('account'));
+      return view('account.tokens', compact('account'));
     }
 
 

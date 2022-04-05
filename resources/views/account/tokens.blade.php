@@ -7,7 +7,7 @@
 @endsection
 @section('topnav')
   <a class="nav-link" aria-current="page" href="/account/{{$account}}">Overview</a>
-  <a class="nav-link active" aria-current="page" href="/account/{{$account}}/assets">Tokens
+  <a class="nav-link active" aria-current="page" href="/account/{{$account}}/tokens">Tokens
     <span class="badge bg-light text-dark rounded-pill align-text-bottom count-tokens"></span>
   </a>
   <a class="nav-link" aria-current="page" href="/account/{{$account}}/nfts">NFTs</a>
@@ -19,38 +19,33 @@
   <div class="p-3 border rounded bg-white">
     <div class="row">
       <div class="col-6">
-        <div class="text-muted text-uppercase fw-bold">Estimated balance</div>
+        <div class="text-muted text-uppercase fw-bold">Estimated token balance</div>
         <h3 class="fw-bold"><span id="price_total_xrp">...</span> XRP <span class="text-muted">≈ $<span id="price_total_fiat">0.00</span></span></h3>
-
-
       </div>
       <div class="col-6">
-
       </div>
     </div>
-{{--
-    Info - general info
-    Assets - trustlines
-    Spending - graphs, filters etc incoming and outgoing payments in XRP
---}}
+    <div class="row">
+      <div class="col-12">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>Token</th>
+              <th>Issuer</th>
+              <th class="text-end">Holding amount</th>
+              <th class="text-end">Value (USD)</th>
+            </tr>
+          </thead>
+          <tbody id="trustlines"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
-
-
 @endsection
-
 @push('javascript')
 <script>
-/*
-let a = new BigNumber('6001199760047990e-3');
-let b = new BigNumber(12);
-aa = a.plus(b);
-alert(aa);
-*/
-
 var total_xrp = new BigNumber(0);
 var account_lines = [];
-
-
 var exchangerates = {usd:0,eur:0};
 function get_exchangerates(){
   //usd:
@@ -71,64 +66,29 @@ function get_exchangerates(){
 function XWAPI_set_exchangerates(d,el,sys,loader){
   if(sys.syscurrency === 'usd') exchangerates.usd = d.price;
   if(sys.syscurrency === 'eur') exchangerates.eur = d.price;
-  console.log('Rates:',exchangerates);
 }
 
-async function xw_xrpl_account_info() {
-  sItem('sidebar_queue_local','connecting',{
-    title: 'Connecting to XRPL...',
-    descr: xw_xrpl_wss_server,
-  });
-  await xw_get_xrpl_client().connect();
-  sItemChangeTitle('connecting','Connected');
-  sItemAddClass('connecting','text-success',10000);
 
-
-  const account_info_response = await xw_get_xrpl_client().request({
-    "command": "account_info",
-    "account": "{{$account}}",
-    "strict": true,
-    "ledger_index": "validated"
-  });
-
-
-  if(account_info_response.type == "response")
-  {
-    $("#price_xrp").text((account_info_response.result.account_data.Balance / 1000000));
-    total_xrp = total_xrp.plus(new BigNumber((account_info_response.result.account_data.Balance / 1000000)));
-    af = xrpl.parseAccountRootFlags(account_info_response.result.account_data.Flags);
-    //console.log(af);
-    if(account_info_response.result.account_data.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
-      //Account is blackholed
-      $("#li_yesblackholed").removeClass('d-none');
-    } else $("#li_noblackholed").removeClass('d-none');
-
-    if(account_info_response.result.account_data.Domain){
-      $("#account_domain").text(xrpl.convertHexToString(account_info_response.result.account_data.Domain))
-    }
-    if(account_info_response.result.account_data.EmailHash){
-      $("#account_emailhash").text(account_info_response.result.account_data.EmailHash)
-    }
-    //Rippling enabled:
-    $("#account_rippling").text((af.lsfDefaultRipple)?'Enabled':'Disabled');
-    //Can receive xrp
-    $("#account_receivexrp").text((af.lsfDisallowXRP)?'No':'Yes');
-
-    $("#account_reqdesttag").text((af.lsfRequireDestTag)?'Yes':'No');
-  }
-
-  xw_get_xrpl_client().disconnect();
-  //sItemChangeTitle('connecting','Disconnected');
-}
 var XWAPI_account_lines_cb_total = 0;
 var XWAPI_account_lines_cb_count = 0;
 function XWAPI_account_lines_cb(d,el,sys,loader){
-  XWAPI_account_lines_cb_total = d.result.lines.length;
+  XWAPI_account_lines_cb_total = d.length;
   $(".count-tokens").text(XWAPI_account_lines_cb_total);
   sItemRemove('account_lines');
   sItem('sidebar_queue_local','account_lines',{title: 'Fetching balances...',descr:'0/'+XWAPI_account_lines_cb_count});
   //sItemChangeTitle('account_lines','Loaded',1000);
-  $.each(d.result.lines,function(k,v){
+
+  $.each(d,function(k,v){
+
+    var tr = '<tr>';
+    tr += '<td>'+v.symbol+'<div class="text-muted small">'+v.currency+'</div></td>';
+    tr += '<td><a href="/account/'+v.account+'"><i class="fas fa-search"></i></a> '+v.account+'</td>';
+    tr += '<td align="right">'+v.balance+'</td>';
+    tr += '<td align="right" id="value_'+v.account+'_'+v.currency+'"></td>';
+    tr += '</tr>';
+    $("#trustlines").append(tr);
+
+
     account_lines[v.account+'_'+v.currency] = v;
     XWAPIRawRequest({
       sysroute: xw_analyzer_url+'/currency_rates/XRP/'+v.currency+'+'+v.account,
@@ -136,7 +96,12 @@ function XWAPI_account_lines_cb(d,el,sys,loader){
       syscurrency:v.currency,
       sysaccount:v.account,
       sysc:'currency_rate_cb'
-    },'currency_rate_'+k)
+    },'currency_rate_'+k);
+
+
+
+
+
   });
   //sItemRemove('account_lines');
 
@@ -144,7 +109,9 @@ function XWAPI_account_lines_cb(d,el,sys,loader){
 
 function XWAPI_currency_rate_cb(d,el,sys,loader){
   XWAPI_account_lines_cb_count += 1;
-  total_xrp = total_xrp.plus(BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).times(BigNumber(d.price)));
+  var currenttokenvalue = BigNumber(account_lines[sys.sysaccount+'_'+sys.syscurrency].balance).times(BigNumber(d.price));
+  $("#value_"+sys.sysaccount+'_'+sys.syscurrency).text(currenttokenvalue.toFormat(2));
+  total_xrp = total_xrp.plus(currenttokenvalue);
   $("#price_total_xrp").text(total_xrp.toFormat(2));
   $("#price_total_fiat").text(total_xrp.times(exchangerates.usd).toFormat(2));
   sItemChangeSubTitle('account_lines',XWAPI_account_lines_cb_count+'/'+XWAPI_account_lines_cb_total+' '+sys.sysaccount);
@@ -157,11 +124,10 @@ function XWAPI_currency_rate_cb(d,el,sys,loader){
 }
 
 $(function(){
-  xw_xrpl_account_info();
   sItem('sidebar_queue_local','account_lines',{title: 'Loading truslines...',descr:false,class:'text-success'});
   get_exchangerates();
   XWAPIRawRequest({
-    sysroute: xw_analyzer_url+'/account_lines/{{$account}}',
+    sysroute: xw_analyzer_url+'/account/trustlines/{{$account}}',
     sysmethod:'GET',
     sysc:'account_lines_cb'
   },'account_lines')

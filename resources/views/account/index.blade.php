@@ -7,7 +7,7 @@
 @endsection
 @section('topnav')
   <a class="nav-link active" aria-current="page" href="/account/{{$account}}">Overview</a>
-  <a class="nav-link" aria-current="page" href="/account/{{$account}}/assets">Tokens
+  <a class="nav-link d-none feature-type-normal" aria-current="page" href="/account/{{$account}}/tokens">Tokens
     <span class="badge bg-light text-dark rounded-pill align-text-bottom count-tokens"></span>
   </a>
   <a class="nav-link" aria-current="page" href="/account/{{$account}}/nfts">NFTs</a>
@@ -26,7 +26,7 @@
           <li class="list-group-item">
             XRP <span class="float-end fw-bold"><span id="price_xrp">...</span> XRP</span>
           </li>
-          <a href="/account/{{$account}}/assets" class="list-group-item list-group-item-action">
+          <a href="/account/{{$account}}/tokens" class="list-group-item list-group-item-action d-none feature-type-normal">
             Tokens <span class="float-end"><i class="fas fa-angle-right"></i></span>
             <span class="float-end me-3 fw-bold count-tokens"></span>
           </a>
@@ -40,13 +40,15 @@
       <div class="col-6">
         <span class="text-muted text-uppercase">Account info</span>
         <dl class="row small mb-0 mt-3">
-          <dt class="col-lg-3 col-sm-3">Activated:</dt>  <dd class="col-lg-9 col-sm-9">-</dd>
-          <dt class="col-lg-3 col-sm-3">Activated by:</dt>  <dd class="col-lg-9 col-sm-9">-</dd>
-          <dt class="col-lg-3 col-sm-3">Can receive XRP:</dt>  <dd class="col-lg-9 col-sm-9" id="account_receivexrp">-</dd>
-          <dt class="col-lg-3 col-sm-3">Requires dest. tag:</dt>  <dd class="col-lg-9 col-sm-9" id="account_reqdesttag">-</dd>
+          <dt class="col-lg-3 col-sm-3">Account type:</dt><dd class="col-lg-9 col-sm-9" id="account_type">-</dd>
+          <dt class="col-lg-3 col-sm-3">Status:</dt><dd class="col-lg-9 col-sm-9" id="account_status">-</dd>
+          <dt class="col-lg-3 col-sm-3">Activated:</dt><dd class="col-lg-9 col-sm-9">-</dd>
+          <dt class="col-lg-3 col-sm-3">Activated by:</dt><dd class="col-lg-9 col-sm-9">-</dd>
+          <dt class="col-lg-3 col-sm-3">Can receive XRP:</dt><dd class="col-lg-9 col-sm-9" id="account_receivexrp">-</dd>
+          <dt class="col-lg-3 col-sm-3">Requires dest. tag:</dt><dd class="col-lg-9 col-sm-9" id="account_reqdesttag">-</dd>
 
           <dt class="col-lg-3 col-sm-3">Email hash:</dt><dd class="col-lg-9 col-sm-9 text-break" id="account_emailhash">-</dd>
-          <dt class="col-lg-3 col-sm-3">Domain:</dt>  <dd class="col-lg-9 col-sm-9" id="account_domain">-</dd>
+          <dt class="col-lg-3 col-sm-3">Domain:</dt><dd class="col-lg-9 col-sm-9" id="account_domain">-</dd>
           <dt class="col-lg-3 col-sm-3">Access:</dt>
           <dd class="col-lg-9 col-sm-9">
             <div class="badge bg-success text-center d-none" style="letter-spacing:1px" id="li_yesblackholed">BLACKHOLED ACCOUNT</div>
@@ -77,6 +79,7 @@ alert(aa);
 
 var total_xrp = new BigNumber(0);
 var account_lines = [];
+var account_type = null;
 
 
 var exchangerates = {usd:0,eur:0};
@@ -100,63 +103,70 @@ function XWAPI_set_exchangerates(d,el,sys,loader){
   if(sys.syscurrency === 'usd') exchangerates.usd = d.price;
   if(sys.syscurrency === 'eur') exchangerates.eur = d.price;
   console.log('Rates:',exchangerates);
+  $("#price_total_fiat").text(total_xrp.times(exchangerates.usd).toFormat(2));
 }
 
-async function xw_xrpl_account_info() {
-  sItem('sidebar_queue_local','connecting',{
-    title: 'Connecting to XRPL...',
-    descr: xw_xrpl_wss_server,
-  });
-  await xw_get_xrpl_client().connect();
-  sItemChangeTitle('connecting','Connected');
-  sItemAddClass('connecting','text-success',10000);
 
+function XWAPI_account_info_cb(d,el,sys,loader){
+  sItemChangeTitle('account_info','Account info fetched');
+  sItemChangeSubTitle('account_info',"Type: "+d.type);
+  sItemAddClass('account_info','text-success',10000);
+  account_type = d.type;
 
-  const account_info_response = await xw_get_xrpl_client().request({
-    "command": "account_info",
-    "account": "{{$account}}",
-    "strict": true,
-    "ledger_index": "validated"
-  });
+  $("#price_xrp").text((d.Balance / 1000000));
+  total_xrp = total_xrp.plus(new BigNumber((d.Balance / 1000000)));
+  $("#price_total_xrp").text(total_xrp.toFormat(2));
+  $("#price_total_fiat").text(total_xrp.times(exchangerates.usd).toFormat(2));
+  af = xrpl.parseAccountRootFlags(d.Flags);
+  //console.log(af);
+  if(d.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
+    //Account is blackholed
+    $("#li_yesblackholed").removeClass('d-none');
+  } else $("#li_noblackholed").removeClass('d-none');
 
-
-  if(account_info_response.type == "response")
-  {
-    $("#price_xrp").text((account_info_response.result.account_data.Balance / 1000000));
-    total_xrp = total_xrp.plus(new BigNumber((account_info_response.result.account_data.Balance / 1000000)));
-    af = xrpl.parseAccountRootFlags(account_info_response.result.account_data.Flags);
-    //console.log(af);
-    if(account_info_response.result.account_data.RegularKey == "rrrrrrrrrrrrrrrrrrrrBZbvji" && af.lsfDisableMaster) {
-      //Account is blackholed
-      $("#li_yesblackholed").removeClass('d-none');
-    } else $("#li_noblackholed").removeClass('d-none');
-
-    if(account_info_response.result.account_data.Domain){
-      $("#account_domain").text(xrpl.convertHexToString(account_info_response.result.account_data.Domain))
-    }
-    if(account_info_response.result.account_data.EmailHash){
-      $("#account_emailhash").text(account_info_response.result.account_data.EmailHash)
-    }
-    //Rippling enabled:
-    $("#account_rippling").text((af.lsfDefaultRipple)?'Enabled':'Disabled');
-    //Can receive xrp
-    $("#account_receivexrp").text((af.lsfDisallowXRP)?'No':'Yes');
-
-    $("#account_reqdesttag").text((af.lsfRequireDestTag)?'Yes':'No');
+  if(d.Domain){
+    $("#account_domain").text(xrpl.convertHexToString(d.Domain))
   }
+  if(d.EmailHash){
+    $("#account_emailhash").text(d.EmailHash)
+  }
+  //Rippling enabled:
+  $("#account_rippling").text((af.lsfDefaultRipple)?'Enabled':'Disabled');
+  //Can receive xrp
+  $("#account_receivexrp").text((af.lsfDisallowXRP)?'No':'Yes');
+  $("#account_reqdesttag").text((af.lsfRequireDestTag)?'Yes':'No');
 
-  xw_get_xrpl_client().disconnect();
-  //sItemChangeTitle('connecting','Disconnected');
+  $("#account_type").text(d.type);
+
+  if(d.synced)
+    $("#account_status").text('Synced')
+  else
+    $("#account_status").text('Queued')
+
+  if(account_type == 'normal') {
+    //set UI
+    $(".feature-type-normal").removeClass('d-none');
+    //set UI end
+    sItem('sidebar_queue_local','account_lines',{title: 'Loading truslines...',descr:false,class:'text-success'});
+    XWAPIRawRequest({
+      sysroute: xw_analyzer_url+'/account/trustlines/{{$account}}',
+      sysmethod:'GET',
+      sysc:'account_lines_cb'
+    },'account_lines')
+  } else if(account_type == 'issuer') {
+
+  }
 }
+
 var XWAPI_account_lines_cb_total = 0;
 var XWAPI_account_lines_cb_count = 0;
 function XWAPI_account_lines_cb(d,el,sys,loader){
-  XWAPI_account_lines_cb_total = d.result.lines.length;
+  XWAPI_account_lines_cb_total = d.length;
   $(".count-tokens").text(XWAPI_account_lines_cb_total);
   sItemRemove('account_lines');
   sItem('sidebar_queue_local','account_lines',{title: 'Fetching balances...',descr:'0/'+XWAPI_account_lines_cb_count});
   //sItemChangeTitle('account_lines','Loaded',1000);
-  $.each(d.result.lines,function(k,v){
+  $.each(d,function(k,v){
     account_lines[v.account+'_'+v.currency] = v;
     XWAPIRawRequest({
       sysroute: xw_analyzer_url+'/currency_rates/XRP/'+v.currency+'+'+v.account,
@@ -185,14 +195,20 @@ function XWAPI_currency_rate_cb(d,el,sys,loader){
 }
 
 $(function(){
-  xw_xrpl_account_info();
-  sItem('sidebar_queue_local','account_lines',{title: 'Loading truslines...',descr:false,class:'text-success'});
-  get_exchangerates();
+
+  sItem('sidebar_queue_local','account_info',{
+    title: 'Fetching account info...',
+    descr: '{{$account}}'
+  });
+
   XWAPIRawRequest({
-    sysroute: xw_analyzer_url+'/account_lines/{{$account}}',
+    sysroute: xw_analyzer_url+'/account/info/{{$account}}',
     sysmethod:'GET',
-    sysc:'account_lines_cb'
-  },'account_lines')
+    sysc:'account_info_cb'
+  },'account_lines');
+
+  get_exchangerates();
+
 });
 
 

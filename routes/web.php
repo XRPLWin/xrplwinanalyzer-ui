@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [App\Http\Controllers\AppController::class, 'front'])->name('front');
+Route::get('/search', [App\Http\Controllers\AppController::class, 'search'])->name('search');
 Route::get('/account/{account}', [App\Http\Controllers\AppController::class, 'account_index'])->name('account.index');
 Route::get('/account/{account}/ancestry', [App\Http\Controllers\AppController::class, 'account_index'])->name('account.ancestry');
-Route::get('/account/{account}/assets', [App\Http\Controllers\AppController::class, 'account_assets'])->name('account.assets');
+Route::get('/account/{account}/tokens', [App\Http\Controllers\AppController::class, 'account_tokens'])->name('account.tokens');
