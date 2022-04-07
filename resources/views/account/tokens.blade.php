@@ -1,6 +1,5 @@
 @extends('layouts.app')
 @section('sidebar')
-
 <div>
   {{$account}}
 </div>
@@ -82,13 +81,11 @@ function XWAPI_account_lines_cb(d,el,sys,loader){
 
     var tr = '<tr>';
     tr += '<td>'+v.symbol+'<div class="text-muted small">'+v.currency+'</div></td>';
-    tr += '<td><a href="/account/'+v.account+'"><i class="fas fa-search"></i></a> '+v.account+'</td>';
+    tr += '<td class="font-monospace">'+v.account+' <a href="/account/'+v.account+'"><i class="fas fa-search"></i></a></td>';
     tr += '<td align="right">'+v.balance+'</td>';
     tr += '<td align="right" id="value_'+v.account+'_'+v.currency+'"></td>';
     tr += '</tr>';
     $("#trustlines").append(tr);
-
-
     account_lines[v.account+'_'+v.currency] = v;
     XWAPIRawRequest({
       sysroute: xw_analyzer_url+'/currency_rates/XRP/'+v.currency+'+'+v.account,
@@ -97,14 +94,7 @@ function XWAPI_account_lines_cb(d,el,sys,loader){
       sysaccount:v.account,
       sysc:'currency_rate_cb'
     },'currency_rate_'+k);
-
-
-
-
-
   });
-  //sItemRemove('account_lines');
-
 }
 
 function XWAPI_currency_rate_cb(d,el,sys,loader){
@@ -118,9 +108,7 @@ function XWAPI_currency_rate_cb(d,el,sys,loader){
   if(XWAPI_account_lines_cb_count >= XWAPI_account_lines_cb_total){
     sItemChangeTitle('account_lines','Balances fetched',4000);
     sItemAddClass('account_lines','text-success');
-    //sItem('sidebar_queue_local','account_lines_done',{title: 'Balances fetched',descr:false,class:'text-success'});
   }
-
 }
 
 $(function(){

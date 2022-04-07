@@ -17,10 +17,15 @@
 @section('content')
   <h1 class="mb-3">Account overview</h1>
   <div class="p-3 border rounded bg-white">
+
+    <div class="text-muted text-uppercase fw-bold">Estimated balance</div>
+    <h3 class="fw-bold"><span id="price_total_xrp">...</span> XRP <span class="text-muted">≈ $<span id="price_total_fiat">0.00</span></span></h3>
+
+
+      <div id="chart1" style="height:400px"></div>
     <div class="row">
       <div class="col-6">
-        <div class="text-muted text-uppercase fw-bold">Estimated balance</div>
-        <h3 class="fw-bold"><span id="price_total_xrp">...</span> XRP <span class="text-muted">≈ $<span id="price_total_fiat">0.00</span></span></h3>
+
         <h5 class="fw-bold mt-4">Assets</h5>
         <ul class="list-group assets">
           <li class="list-group-item">
@@ -64,6 +69,8 @@
     Spending - graphs, filters etc incoming and outgoing payments in XRP
 --}}
   </div>
+
+
 
 
 @endsection
@@ -194,6 +201,70 @@ function XWAPI_currency_rate_cb(d,el,sys,loader){
 
 }
 
+
+const chart1 = LightweightCharts.createChart($("#chart1")[0], {
+      layout: {
+        backgroundColor: "rgba(255,255,255,0)",
+        textColor: "#666"
+      },
+      grid: {
+        vertLines: {
+          color: "rgba(42, 46, 57, 0)"
+        },
+        horzLines: {
+          color: "#ecedee"
+        },
+      },
+      priceScale: {
+        borderColor: "#dee2e6",
+      },
+      crosshair: {
+        vertLine: {
+          width: 2,
+          color: 'rgba(224, 227, 235, 0.2)',
+          style: 0,
+        },
+        horzLine: {
+          visible: false,
+          labelVisible: false,
+        },
+      },
+      timeScale: {
+        borderColor: "#dee2e6",
+        timeVisible: true,
+        secondsVisible: false,
+        autoScale:true
+      },
+});
+const chart1prices = chart1.addAreaSeries({topColor: 'rgba(33, 150, 243, 0.56)',bottomColor: 'rgba(33, 150, 243, 0.04)',lineColor: 'rgba(33, 150, 243, 1)',lineWidth: 2,crossHairMarkerVisible: false});
+const volumeSeries = chart1.addHistogramSeries({
+	color: '#26a69a',
+	priceFormat: {
+		type: 'volume',
+	},
+	priceScaleId: '',
+	scaleMargins: {
+		top: 0.8,
+		bottom: 0,
+	},
+});
+function XWAPI_chart_spending_cb(d,el,sys,loader){
+  setPriceD = [];
+  setVolumeSeriesD = [];
+  d.forEach(function (c,i,a){
+    //setCandleD.push({time: c[0], open: c[1], high: c[2], low: c[3], close: c[4]});
+    setPriceD.push({time:c[0],value:c[2]})
+
+    if(c[1] < 0)
+      color = 'rgba(255,82,82, 0.8)';
+    else
+      color = 'rgba(0, 150, 136, 0.8)';
+    setVolumeSeriesD.push({time:c[0],value:Math.abs(c[1]),color:color})
+  });
+  chart1prices.setData(setPriceD);
+  volumeSeries.setData(setVolumeSeriesD)
+}
+
 $(function(){
 
   sItem('sidebar_queue_local','account_info',{
@@ -209,6 +280,11 @@ $(function(){
 
   get_exchangerates();
 
+  XWAPIRawRequest({
+    sysroute: xw_analyzer_url+'/account/chart/spending/{{$account}}',
+    sysmethod:'GET',
+    sysc:'chart_spending_cb'
+  },'chart_spending');
 });
 
 

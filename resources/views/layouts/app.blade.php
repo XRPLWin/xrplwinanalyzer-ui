@@ -121,6 +121,8 @@
       <script src="{{ asset('res/lib/core/js.js?v='.md5(config('xwin.version'))) }}"></script>
       <script src="{{ asset('res/lib/chartjs/chart.min.js') }}"></script>
       <script src='{{ asset('res/lib/bignumber/bignumber.min.js') }}'></script>
+      <script src='{{ asset('res/lib/lwcharts/lightweight-charts.standalone.production.js') }}'></script>
+
       <script>
       XWAPIRawRequest({
         sysroute: xw_analyzer_url+'/server/queue',
