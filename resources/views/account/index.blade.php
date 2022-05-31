@@ -22,7 +22,7 @@
     <h3 class="fw-bold"><span id="price_total_xrp">...</span> XRP <span class="text-muted">≈ $<span id="price_total_fiat">0.00</span></span></h3>
 
 
-      <div id="chart1" style="height:400px"></div>
+      <div id="chart1" style="height:200px"></div>
     <div class="row">
       <div class="col-6">
 
