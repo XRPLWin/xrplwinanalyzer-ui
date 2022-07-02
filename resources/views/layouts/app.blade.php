@@ -41,7 +41,7 @@
              <div class="container-fluid">
                <a class="navbar-brand" href="/">
                   <img src="/res/img/xrplwin_logo_80.webp" alt="W" class="d-inline-block align-text-top" width="45" height="25" title="XRPLWin">
-                  <span class="d-none d-lg-inline">XRPL Explorer</span>
+                  <span class="d-none d-lg-inline">XRPL Explorer (DEMO) <small>alpha version</small></span>
                 </a>
                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topnav" aria-controls="topnav" aria-expanded="false" aria-label="Toggle navigation">
                  <span class="navbar-toggler-icon"></span>
@@ -88,7 +88,11 @@
                  <a class="nav-link active" aria-current="page" href="#">Account<span class="badge bg-light text-dark rounded-pill align-text-bottom">0</span></a>--}}
                </nav>
              </div>
+
              <div class="p-3">
+               <div class="alert alert-primary" role="alert">
+                    This is development version of AnalyzerUI. You are free to explore.
+               </div>
                @yield('content')
              </div>
 
